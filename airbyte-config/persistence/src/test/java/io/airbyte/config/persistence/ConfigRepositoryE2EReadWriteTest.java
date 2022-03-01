@@ -15,6 +15,7 @@ import io.airbyte.config.StandardDestinationDefinition;
 import io.airbyte.config.StandardSourceDefinition;
 import io.airbyte.config.StandardSync;
 import io.airbyte.config.StandardSyncOperation;
+import io.airbyte.config.StandardWorkspace;
 import io.airbyte.config.persistence.split_secrets.MemorySecretPersistence;
 import io.airbyte.config.persistence.split_secrets.NoOpSecretsHydrator;
 import io.airbyte.db.Database;
@@ -62,7 +63,9 @@ public class ConfigRepositoryE2EReadWriteTest {
         new ConfigsDatabaseMigrator(database, DatabaseConfigPersistenceLoadDataTest.class.getName());
     final DevDatabaseMigrator devDatabaseMigrator = new DevDatabaseMigrator(configsDatabaseMigrator);
     MigrationDevHelper.runLastMigration(devDatabaseMigrator);
-    configRepository.writeStandardWorkspace(MockData.standardWorkspace());
+    for (final StandardWorkspace workspace : MockData.standardWorkspaces()) {
+      configRepository.writeStandardWorkspace(workspace);
+    }
     for (final StandardSourceDefinition sourceDefinition : MockData.standardSourceDefinitions()) {
       configRepository.writeStandardSourceDefinition(sourceDefinition);
     }
@@ -93,17 +96,17 @@ public class ConfigRepositoryE2EReadWriteTest {
   @Test
   void testWorkspaceCountConnections() throws IOException {
 
-    final UUID workspaceId = MockData.standardWorkspace().getWorkspaceId();
-    assertEquals(MockData.standardSyncs().size(), configRepository.countConnectionsForWorkspace(workspaceId));
-    assertEquals(MockData.destinationConnections().size(), configRepository.countDestinationsForWorkspace(workspaceId));
-    assertEquals(MockData.sourceConnections().size(), configRepository.countSourcesForWorkspace(workspaceId));
+    final UUID workspaceId = MockData.standardWorkspaces().get(0).getWorkspaceId();
+    assertEquals(MockData.standardSyncs().size() - 1, configRepository.countConnectionsForWorkspace(workspaceId));
+    assertEquals(MockData.destinationConnections().size() - 1, configRepository.countDestinationsForWorkspace(workspaceId));
+    assertEquals(MockData.sourceConnections().size() - 1, configRepository.countSourcesForWorkspace(workspaceId));
   }
 
   @Test
   public void testListWorkspaceStandardSync() throws IOException {
 
-    final List<StandardSync> syncs = configRepository.listWorkspaceStandardSyncs(MockData.standardWorkspace().getWorkspaceId());
-    assertThat(MockData.standardSyncs()).hasSameElementsAs(syncs);
+    final List<StandardSync> syncs = configRepository.listWorkspaceStandardSyncs(MockData.standardWorkspaces().get(0).getWorkspaceId());
+    assertThat(MockData.standardSyncs().subList(0, 4)).hasSameElementsAs(syncs);
   }
 
 }
